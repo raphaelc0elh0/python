@@ -1,10 +1,17 @@
-while True:
-    try:
-        num = int(input("please enter a number: "))
-    except:
-        print("That's not a number!")
-    else:
-        print("Good job, you entered a number!")
-        break
-    finally:
-        print("Developed by Raphael")
+class Animal:
+    def __init__(self, name, species) -> None:
+        self.name = name
+        self.species = species
+
+    def __repr__(self):
+        return f"{self.name} is a {self.species}"
+
+    def make_sound(self, sound):
+        print(f"this animal says {sound}")
+
+
+class Cat(Animal):
+    def __init__(self, name, breed, toy):
+        super().__init__(name, species="Cat")
+        self.breed = breed
+        self.toy = toy
