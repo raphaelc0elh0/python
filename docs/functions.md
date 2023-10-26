@@ -71,6 +71,18 @@ fav_colors(raphael="purple", gabi="red", vitor="teal")
 # vitor's favorite color is: teal
 ```
 
+### Parameter Ordering
+
+1. parameters
+2. \*args
+3. default parameters
+4. \*\*kwargs
+
+```python
+def example(a, b, *args, instructor="Raphael", **kwargs):
+    return [a, b, args, instructor, kwargs]
+```
+
 ### Unpacking
 
 #### Unpacking tuples
@@ -112,18 +124,6 @@ names = {"first": "Colt", "second": "Rusty"}
 
 print(display_names(names)) # TypeError: display_names() missing 1 required positional argument: 'second'
 print(display_names(**names)) # Colt says hello to Rusty
-```
-
-### Parameter Ordering
-
-1. parameters
-2. \*args
-3. default parameters
-4. \*\*kwargs
-
-```python
-def example(a, b, *args, instructor="Raphael", **kwargs):
-    return [a, b, args, instructor, kwargs]
 ```
 
 ### Scopes
@@ -335,4 +335,284 @@ print(list(zipped))  # [(1, 4), (2, 5), (3, 6)]
 zipped = zip(nums1, nums2)
 print(dict(zipped))  # {1: 4, 2: 5, 3: 6}
 
+```
+
+## Generators
+
+### Iterators vs iterables
+
+- Iterator: an object that can be iterated upon. An object which returns data, one element at a time when `next()` is called on it.
+- Iterable: an object which will return an iterator when `iter()` is called on it.
+
+`"hello"` is an iterable, but it is not an iterator
+`iter("hello")` returns an iterator
+
+Example:
+
+```python
+name = "Oprah"
+
+next(name) # TypeError: 'str' object is not an iterator
+
+it = iter(name)
+print(it)  # <str_ascii_iterator object at 0xffffb697cdc0>
+
+print(next(it)) # O
+print(next(it)) # p
+print(next(it)) # r
+print(next(it)) # a
+print(next(it)) # h
+print(next(it)) # StopIteration
+```
+
+### Functions vs Generators
+
+| functions                              | generators                        |
+| -------------------------------------- | --------------------------------- |
+| uses `return`                          | uses `yield`                      |
+| return once                            | can yeald multiple times          |
+| when invoked, returns the return value | when invoked, returns a generator |
+
+```python
+def count_up_to(max):
+    count = 1
+    while count <= max:
+        yield count
+        count += 1
+
+counter = count_up_to(10)
+
+for n in counter:
+    print(n)
+```
+
+### Generator expressions
+
+- You can create generator from generator expressions
+- Generator expressions look a lot like list comprehensions
+- Generator expressions use () instead of []
+
+```python
+def nums():
+  for num in range(1, 10):
+    yield num
+
+g= nums()
+g = (num for num in range(1, 10))
+```
+
+## Decorators
+
+Decorators are HOF - High Order Functions
+
+![HOF](./images/hof.png)
+
+```python
+def be_polite(func):
+    def wrapper():
+        print("What a pleasure to meet you!")
+        func()
+        print("Have a great day!")
+    return wrapper
+
+
+def greet():
+    print("My name is Raphael.")
+
+greet = be_polite(greet)
+greet()
+# What a pleasure to meet you!
+# My name is Raphael.
+# Have a great day!
+
+"""
+using decorator
+"""
+@be_polite
+def greet():
+    print("My name is Raphael.")
+
+greet()
+# What a pleasure to meet you!
+# My name is Raphael.
+# Have a great day!
+
+"""
+with different signatures and multiple arguments
+"""
+def shout(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs).upper()
+    return wrapper
+
+@shout
+def greet(name):
+    return f"Hi, I'm {name}"
+
+@shout
+def order(main, side):
+    return f"Hi, I'd like the {main}, with a side of {side}, please"
+
+print(greet("Raphael"))  # HI, I'M RAPHAEL
+print(order("parmegiana", "fries")) # HI, I'D LIKE THE PARMEGIANA, WITH A SIDE OF FRIES, PLEASE
+```
+
+### Preserving metadata
+
+```python
+"""
+without preserving metadata
+"""
+def a_decorator(func):
+    def wrapper(*args, **kwargs):
+        """A wrapper function"""
+        # Extend some capabilities of func
+        func()
+    return wrapper
+
+@a_decorator
+def first_function():
+    """This is docstring for first function"""
+    print("first function")
+
+@a_decorator
+def second_function(a):
+    """This is docstring for second function"""
+    print("second function")
+
+print(first_function.__name__)  # wrapper
+print(first_function.__doc__)  # A wrapper function
+print(second_function.__name__)  # wrapper
+print(second_function.__doc__)  # A wrapper function
+
+"""
+preserving metadata
+"""
+from functools import wraps
+
+def a_decorator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """A wrapper function"""
+
+        # Extend some capabilities of func
+        func()
+    return wrapper
+
+@a_decorator
+def first_function():
+    """This is docstring for first function"""
+    print("first function")
+
+@a_decorator
+def second_function(a):
+    """This is docstring for second function"""
+    print("second function")
+
+print(first_function.__name__)  # first_function
+print(first_function.__doc__)  # This is docstring for first function
+print(second_function.__name__)  # second_function
+print(second_function.__doc__)  # This is docstring for second function
+```
+
+### Passing values to a decorator
+
+```python
+from functools import wraps
+
+def ensure_first_args_is(val):
+    def inner(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if args and args[0] != val:
+                raise ValueError(f"First arg needs to be {val}")
+            return func(*args, **kwargs)
+        return wrapper
+    return inner
+
+@ensure_first_args_is("burrito")
+def fav_food(*foods):
+    print(foods)
+
+fav_food("burrito", "parmegiana") # ('burrito', 'parmegiana')
+fav_food("parmegiana", "burrito") # ValueError: First arg needs to be burrito
+
+@ensure_first_args_is(10)
+def adds(num1, num2):
+    return num1 + num2
+
+print(adds(10, 20)) # 30
+print(adds(20, 10)) # ValueError: First arg needs to be 10
+```
+
+### Decorator examples
+
+```python
+"""
+speed tester decorator
+"""
+from time import time
+from functools import wraps
+
+def speed_test(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time()
+        result = func(*args, **kwargs)
+        total_time = time() - start_time
+        print(f"{func.__name__} took {total_time} to run")
+        return result
+    return wrapper
+
+@speed_test
+def sum_nums():
+    return sum(x for x in range(1000000))
+
+sum_nums()
+
+"""
+ensuring no kwargs
+"""
+from functools import wraps
+
+def ensure_no_kwargs(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if kwargs:
+            raise ValueError("No kwargs allowed")
+        return func(*args, **kwargs)
+    return wrapper
+
+@ensure_no_kwargs
+def greet(name):
+    print(f"Hi there {name}")
+
+greet("Raphael") # Hi there Raphael
+greet(name="Raphael") # ValueError: No kwargs allowed
+
+"""
+enforcing argument types
+"""
+def enforce(*types):
+    def decorator(f):
+            def new_func(*args, **kwargs):
+                newargs= []
+                for (a, t) in zip(args, types):
+                    newargs.append( t(a))
+                return f(*newargs, **kwargs)
+            return new_func
+    return decorator
+
+@enforce(str, int)
+def repeat_msg (msg, times):
+    for time in range(times):
+        print (msg)
+
+repeat_msg ("hello", 2)
+# hello
+# hello
+repeat_msg ("hello", '2')
+# hello
+# hello
+repeat_msg ("hello", [2,2]) # TypeError: int() argument must be a string, a bytes-like object or a real number, not 'list'
 ```

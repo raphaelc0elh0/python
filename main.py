@@ -1,17 +1,22 @@
-class Animal:
-    def __init__(self, name, species) -> None:
-        self.name = name
-        self.species = species
+def enforce(*types):
+    def decorator(f):
+            def new_func(*args, **kwargs):
+                newargs= []
+                for (a, t) in zip(args, types):
+                    newargs.append( t(a))
+                return f(*newargs, **kwargs)
+            return new_func
+    return decorator
 
-    def __repr__(self):
-        return f"{self.name} is a {self.species}"
-
-    def make_sound(self, sound):
-        print(f"this animal says {sound}")
-
-
-class Cat(Animal):
-    def __init__(self, name, breed, toy):
-        super().__init__(name, species="Cat")
-        self.breed = breed
-        self.toy = toy
+@enforce(str, int)
+def repeat_msg (msg, times):
+    for time in range(times):
+        print (msg)
+        
+repeat_msg ("hello", 2)
+# hello
+# hello
+repeat_msg ("hello", '2')
+# hello
+# hello
+repeat_msg ("hello", [2,2]) # TypeError: int() argument must be a string, a bytes-like object or a real number, not 'list'

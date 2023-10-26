@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
 
-pip install "$@"
-pip freeze > requirements.txt
 docker exec python pip install -r requirements.txt
+docker exec python pip install "$@"
+docker exec python pip freeze > requirements.txt
